@@ -21,9 +21,15 @@ export const signup = async (req, res, next) => {
         await newUser.save();
 
         // Gửi phản hồi về client với mã 201 (Created) nếu thành công
-        res.status(201).json("User successfully created!");
+        res.status(201).json({
+            success: true,
+            message: "User successfully created!",
+        });
     } catch (error) {
         // Nếu xảy ra lỗi (ví dụ: trùng email, lỗi kết nối DB...), gửi mã lỗi 500
+        if (!error.statusCode) {
+            error.statusCode = 500;
+        }
         next(error);
     }
 };

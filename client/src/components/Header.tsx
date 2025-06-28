@@ -28,7 +28,7 @@ const Header = () => {
                     <NavbarLink href="/about" active={currentPath === "/about"}>
                         About
                     </NavbarLink>
-                    <NavbarLink href="/sign-in" active={currentPath === "/sign-in"}>
+                    <NavbarLink href="/sign-up" active={currentPath === "/sign-in"}>
                         Sign In
                     </NavbarLink>
                 </NavbarCollapse>
