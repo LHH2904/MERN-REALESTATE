@@ -1,6 +1,7 @@
 import {Button, HelperText, Label, TextInput} from "flowbite-react";
 import {Link} from "react-router-dom";
 import {useSignUp} from "./useSignUp";
+import OAuth from "../../components/OAuth";
 
 const SignUp = () => {
     const {
@@ -63,7 +64,7 @@ const SignUp = () => {
                 <Button type="submit" disabled={loading}>
                     {loading ? 'Loading...' : 'SIGN UP'}
                 </Button>
-                <Button type="button" color={"red"}>CONTINUE WITH GOOGLE</Button>
+                <OAuth/>
                 <HelperText>
                     Have an account?
                     <Link

@@ -1,6 +1,7 @@
 import {Button, HelperText, Label, TextInput} from "flowbite-react";
 import {Link} from "react-router-dom";
 import {useSignIn} from "./useSignIn";
+import OAuth from "../../components/OAuth";
 
 
 const SignIn = () => {
@@ -52,6 +53,7 @@ const SignIn = () => {
                 <Button type="submit" disabled={loading}>
                     {loading ? 'Loading...' : 'SIGN IN'}
                 </Button>
+                <OAuth/>
                 <HelperText>
                     Don't have an account?
                     <Link
