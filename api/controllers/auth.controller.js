@@ -1,5 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import {errorHandler} from "../utils/error.js";
+import jwt from "jsonwebtoken";
 
 // Định nghĩa hàm signup để xử lý đăng ký người dùng mới
 export const signup = async (req, res, next) => {
@@ -33,3 +35,37 @@ export const signup = async (req, res, next) => {
         next(error);
     }
 };
+
+export const signin = async (req, res, next) => {
+    const { email, password } = req.body;
+    
+    try {
+        // Tìm user theo email
+        const validUser = await User.findOne({ email });
+
+        // Nếu không tìm thấy user
+        if (!validUser) return next(errorHandler(404, "User not found"));
+
+        // So sánh mật khẩu client nhập và mật khẩu đã hash trong DB
+        const validPassword = bcrypt.compareSync(password, validUser.password)
+
+        if (!validPassword) return next(errorHandler(401, "Wrong credential!"));
+
+        // Tạo token JWT chứa ID user
+        const token = jwt.sign(
+            {id: validUser._id},
+            process.env.JWT_SECRET // Key bí mật từ biến môi trường
+        );
+
+        // Loại bỏ password khỏi object trả về cho client
+        const { password: pass, ...rest } = validUser._doc;
+
+        // Trả token qua cookie, trả dữ liệu user (trừ password)
+        res
+            .cookie("access_token", token, { httpOnly: true })
+            .status(200)
+            .json(rest);
+    } catch (e) {
+        next(e);  // Gửi lỗi cho middleware xử lý lỗi chung
+    }
+}
