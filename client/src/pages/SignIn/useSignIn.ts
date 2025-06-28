@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import {type ChangeEvent, type FormEvent, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
+import {useDispatch, useSelector} from "react-redux";
+import {signInStart, signInSuccess,signInFailure} from "../../redux/user/userSlice";
+import type {RootState} from "../../redux/store";
 
 type FormData = {
     email: string;
@@ -8,46 +11,41 @@ type FormData = {
 
 export const useSignIn = () => {
     const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
+    const { loading, error } = useSelector((state: RootState) => state.user);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
             [e.target.id]: e.target.value,
         });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setError(null);
-
         try {
+            dispatch(signInStart())
             const res = await fetch('/api/auth/signin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include', // Để nhận cookie
                 body: JSON.stringify(formData),
             });
 
             const data = await res.json();
 
             if (data.success === false) {
-                setError(data.message || 'Login failed');
-                setLoading(false);
+                dispatch(signInFailure(data.message))
                 return;
             }
 
             setFormData({ email: '', password: '' });
-            setLoading(false);
+            dispatch(signInSuccess(data));
             navigate('/');
-        } catch (err) {
-            setLoading(false);
-            setError('Something went wrong.');
+        } catch (err:any) {
+            dispatch(signInFailure(err.message));
         }
     };
 
