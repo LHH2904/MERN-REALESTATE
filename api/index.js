@@ -17,12 +17,7 @@ mongoose.connect(process.env.MONGO)
 const app = express();
 
 app.use(express.json());
-
 app.use(cookieParser());
-
-app.listen(3000, () => {
-    console.log('Server started on port 3000!');
-});
 
 app.use("/api/user", userRoute);
 app.use("/api/auth", authRoute);
@@ -36,3 +31,7 @@ app.use((err,req, res, next) => {
         message,
     });
 })
+
+app.listen(3000, () => {
+    console.log('Server started on port 3000!');
+});

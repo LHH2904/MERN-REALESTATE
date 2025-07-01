@@ -84,40 +84,55 @@ export const signin = async (req, res, next) => {
  * Đăng nhập hoặc đăng ký bằng Google OAuth
  */
 export const google = async (req, res, next) => {
+    console.log("Google login route accessed"); // log đầu tiên
+    console.log("Google login body:", req.body);
     try {
+        const { email, name, photo, supabaseId } = req.body;
         // Tìm người dùng theo email (từ Google)
-        const user = await User.findOne({ email: req.body.email });
+        const user = await User.findOne({ email });
+        console.log("User found in DB:", user);
 
         if (user) {
-            // Nếu user đã tồn tại, tạo JWT token và gửi về
-            const token = jwt.sign({id: user._id}, process.env.JWT_SECRET)
-            const {password: pass, ...rest} = user._doc;
-            res
-            .cookie("access_token", token, { httpOnly: true })
-            .status(200)
-            .json(rest);
-        } else {
-            // Nếu chưa có, tạo mật khẩu ngẫu nhiên rồi mã hóa
-            const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-            const hashedPassword = bcrypt.hashSync(generatedPassword,10);
-            // Tạo người dùng mới
-            const newUser = new User({
-                // Tạo username từ tên hiển thị (Google) và thêm hậu tố thời gian để tránh trùng
-                username: req.body.name.split(" ").join("").toLowerCase() + Date.now().toString(36).slice(-4),
-                email: req.body.email,
-                password: hashedPassword,
-                avatar: req.body.photo,
-            })
-            await newUser.save();
+            if (user.provider === 'local' || user._id.toString() !== supabaseId.toString()) {
+                return next(errorHandler(409, "Email already exists with different provider."));
+            }
+            // 2. Nếu đã tồn tại → tạo JWT
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
-            // Tạo JWT và gửi về client
-            const token = jwt.sign({id: newUser._id}, process.env.JWT_SECRET)
-            const { password: pass, ...rest } = newUser._doc;
+            const { password: pass, ...rest } = user._doc;
+
             return res
                 .cookie("access_token", token, { httpOnly: true })
                 .status(200)
-                .json(rest);
+                .json({ success: true, user: rest });
         }
+
+        // 3. Nếu chưa có user → tạo mới
+        const randomPassword =
+            Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        const hashedPassword = bcrypt.hashSync(randomPassword, 10);
+
+        const newUser = new User({
+            _id: supabaseId,
+            username: name.split(" ").join("").toLowerCase() + Date.now().toString(36).slice(-4),
+            email: req.body.email,
+            password: hashedPassword,
+            avatar: photo,
+            provider: "google",
+        });
+
+        const savedUser = await newUser.save();
+
+        // 4. Tạo token cho user mới
+        const token = jwt.sign({ id: savedUser._id }, process.env.JWT_SECRET);
+
+        const { password: pass, ...rest } = savedUser._doc;
+
+        return res
+            .cookie("access_token", token, { httpOnly: true })
+            .status(200)
+            .json({ success: true, user: rest });
+
     } catch (e) {
         next(e);  // Gửi lỗi cho middleware xử lý lỗi chung
     }

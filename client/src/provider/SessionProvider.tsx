@@ -1,10 +1,11 @@
 import {type ReactNode, useEffect} from "react";
 import { supabase } from "../supabase";
 import { useDispatch } from "react-redux";
-import { signInSuccess } from "../redux/user/userSlice";
+import {signInFailure, signInSuccess} from "../redux/user/userSlice";
+import type {AppDispatch} from "../redux/store";
 
 const SessionProvider = ({ children }: { children: ReactNode }) => {
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
 
     useEffect(() => {
         const restoreSession = async () => {
@@ -15,19 +16,36 @@ const SessionProvider = ({ children }: { children: ReactNode }) => {
             }
 
             const user = data.session.user;
-            const currentUser = {
-                _id: user.id,
-                email: user.email,
-                username: user.user_metadata?.full_name || "User",
-                avatar: user.user_metadata?.avatar_url || "",
-                createdAt: user.created_at,
-                updatedAt: new Date().toISOString(),
-            };
 
-            dispatch(signInSuccess(currentUser));
+            try {
+                const res = await fetch("/api/auth/google", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: user.email,
+                        name: user.user_metadata?.full_name,
+                        photo: user.user_metadata?.avatar_url,
+                        supabaseId: user.id,
+                    }),
+                    credentials: "include",
+                });
+
+                const serverUser = await res.json();
+
+                if (!serverUser.success) {
+                    dispatch(signInFailure(serverUser.message || "Auth failed"));
+                    return;
+                }
+
+                // dispatch user MongoDB về Redux
+                dispatch(signInSuccess(serverUser.user));
+
+            } catch (err) {
+                console.error("Session sync error:", err);
+            }
         };
 
-        restoreSession();
+        restoreSession().then();
     }, [dispatch]);
 
     return <>{children}</>;
