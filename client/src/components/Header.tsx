@@ -21,7 +21,7 @@ const Header = () => {
                 </form>
                 {/* Toggle và Avatar ở màn hình nhỏ */}
                 <div className="flex items-center gap-2 sm:hidden">
-                    <NavbarToggle/>
+                    <NavbarToggle />
                     {currentUser && (
                         <Avatar
                             img={currentUser.avatar}
@@ -30,7 +30,7 @@ const Header = () => {
                         />
                     )}
                 </div>
-                <NavbarCollapse className="flex items-center gap-4">
+                <NavbarCollapse>
                     <div className="flex items-center gap-4">
                         <NavbarLink href="/" active={currentPath === "/"}>
                             Home
