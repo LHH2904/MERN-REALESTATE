@@ -84,8 +84,7 @@ export const signin = async (req, res, next) => {
  * Đăng nhập hoặc đăng ký bằng Google OAuth
  */
 export const google = async (req, res, next) => {
-    console.log("Google login route accessed"); // log đầu tiên
-    console.log("Google login body:", req.body);
+
     try {
         const { email, name, photo, supabaseId } = req.body;
         // Tìm người dùng theo email (từ Google)

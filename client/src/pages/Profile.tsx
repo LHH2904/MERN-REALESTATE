@@ -3,7 +3,14 @@ import type {AppDispatch, RootState} from "../redux/store";
 import {Avatar, Button, FileInput, HelperText, Label, TextInput} from "flowbite-react";
 import {type ChangeEvent, type FormEvent, useEffect, useRef, useState} from "react";
 import {supabase} from "../supabase";
-import {updateUserFailure, updateUserStart, updateUserSuccess} from "../redux/user/userSlice";
+import {
+    deleteUserFailure,
+    deleteUserStart, deleteUserSuccess,
+    updateUserFailure,
+    updateUserStart,
+    updateUserSuccess
+} from "../redux/user/userSlice";
+import {useNavigate} from "react-router-dom";
 
 export interface CurrentUser {
     _id: string;
@@ -32,6 +39,7 @@ const Profile = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const dispatch = useDispatch<AppDispatch>();
     const [updateSuccess, setUpdateSuccess] = useState(false);
+    const navigate = useNavigate();
 
     // Load current user data vào form
     useEffect(() => {
@@ -171,6 +179,36 @@ const Profile = () => {
         }
     };
 
+    const handleDelete = async () => {
+        if (!currentUser) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            dispatch(deleteUserStart())
+            const res = await fetch(`/api/user/delete/${currentUser._id}`, {
+                method: "DELETE",
+                credentials: "include",
+            })
+            const data = await res.json();
+            if (data.success === false) {
+                dispatch(deleteUserFailure(data.message));
+                return;
+            }
+            await supabase.auth.signOut();
+            dispatch(deleteUserSuccess(data));
+            navigate("/sign-in");
+
+        } catch (e) {
+            if (e instanceof Error) {
+                dispatch(deleteUserFailure(e.message));
+            } else {
+                dispatch(deleteUserFailure("Unknown error occurred"));
+            }
+        }
+    }
+
     if (!currentUser) return <div className="text-center mt-10">Loading...</div>;
 
     return (
@@ -243,7 +281,10 @@ const Profile = () => {
                     {loading ? 'Loading...' : 'UPDATE'}
                 </Button>
                 <div className='flex justify-between'>
-                    <HelperText className="text-red-600 font-medium">
+                    <HelperText
+                        className="text-red-600 font-medium cursor-pointer"
+                        onClick={handleDelete}
+                    >
                         Delete Account
                     </HelperText>
                     <HelperText className="text-red-600 font-medium">

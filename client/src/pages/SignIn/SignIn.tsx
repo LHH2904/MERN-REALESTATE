@@ -1,7 +1,10 @@
 import {Button, HelperText, Label, TextInput} from "flowbite-react";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {useSignIn} from "./useSignIn";
 import OAuth from "../../components/OAuth";
+import {useSelector} from "react-redux";
+import type {RootState} from "../../redux/store";
+import {useEffect} from "react";
 
 
 const SignIn = () => {
@@ -12,6 +15,15 @@ const SignIn = () => {
         loading,
         error
     } = useSignIn();
+
+    const currentUser = useSelector((state: RootState) => state.user.currentUser);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (currentUser) {
+            navigate("/");  // tự động chuyển nếu đã login rồi
+        }
+    }, [currentUser, navigate]);
 
 
 
