@@ -1,8 +1,9 @@
-import {useSelector} from "react-redux";
-import type {RootState} from "../redux/store";
+import {useDispatch, useSelector} from "react-redux";
+import type {AppDispatch, RootState} from "../redux/store";
 import {Avatar, Button, FileInput, HelperText, Label, TextInput} from "flowbite-react";
 import {type ChangeEvent, type FormEvent, useEffect, useRef, useState} from "react";
 import {supabase} from "../supabase";
+import {updateUserFailure, updateUserStart, updateUserSuccess} from "../redux/user/userSlice";
 
 export interface CurrentUser {
     _id: string;
@@ -27,8 +28,10 @@ const Profile = () => {
     const [file, setFile] = useState<File | undefined>(undefined);
     const [avatarPreview, setAvatarPreview] = useState<string>(currentUser?.avatar || "");
     const [uploadMessage, setUploadMessage] = useState<string>("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(false);
+    const dispatch = useDispatch<AppDispatch>();
+    const [updateSuccess, setUpdateSuccess] = useState(false);
 
     // Load current user data vào form
     useEffect(() => {
@@ -74,13 +77,33 @@ const Profile = () => {
         handleFileUpload(file).then();
     }, [file]);
 
+    // Tự động ẩn thông báo sau vài giây
+    useEffect(() => {
+        if (uploadMessage) {
+            const timer = setTimeout(() => {
+                setUploadMessage("");
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [uploadMessage]);
+
+    // Tự động ẩn thông báo sau vài giây
+    useEffect(() => {
+        if (updateSuccess) {
+            const timer = setTimeout(() => {
+                setUpdateSuccess(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [updateSuccess]);
+
     // Upload file lên supabase và lấy public url
     const handleFileUpload = async (file: File) => {
         if (!currentUser) return;
 
         const filePath = `${currentUser._id}/${Date.now()}_${file.name}`;
 
-        const { error } = await supabase.storage
+        const {error} = await supabase.storage
             .from("image")
             .upload(filePath, file);
 
@@ -90,7 +113,7 @@ const Profile = () => {
             return;
         }
 
-        const { data: publicUrlData } = supabase.storage
+        const {data: publicUrlData} = supabase.storage
             .from("image")
             .getPublicUrl(filePath);
 
@@ -105,16 +128,44 @@ const Profile = () => {
         setUploadMessage("Upload Image Successfully");
     };
 
-
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
+        if (!currentUser) {
+            setLoading(false);
+            return;
+        }
+
         try {
-            console.log("Form submitted:", formData);
+            dispatch(updateUserStart());
+            const res = await fetch(`/api/user/update/${currentUser._id}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify(formData)
+            })
+
+            const data = await res.json();
+            if (data.success === false) {
+                dispatch(updateUserFailure(data.message));
+                setError(data.message);
+                return;
+            }
+
+            dispatch(updateUserSuccess(data));
+            setUpdateSuccess(true);
         } catch (err) {
-            setError("Có lỗi xảy ra khi cập nhật thông tin.");
+            if (err instanceof Error) {
+                dispatch(updateUserFailure(err.message));
+                setError(err.message);
+            } else {
+                dispatch(updateUserFailure("Lỗi không xác định."));
+                setError("Lỗi không xác định.");
+            }
         } finally {
             setLoading(false);
         }
@@ -132,7 +183,8 @@ const Profile = () => {
                         Upload file
                     </Label>
                     <FileInput id="file" ref={fileRef} accept='image/*' onChange={handleFileChange}/>
-                    <HelperText className="mt-1">A profile picture is useful to confirm your are logged into your account</HelperText>
+                    <HelperText className="mt-1">A profile picture is useful to confirm your are logged into your
+                        account</HelperText>
                 </div>
                 <Avatar
                     img={formData.avatar || avatarPreview}
@@ -183,7 +235,6 @@ const Profile = () => {
                         id="password"
                         type="password"
                         value={formData.password}
-                        required
                         shadow
                         onChange={handleChange}
                     />
@@ -199,6 +250,7 @@ const Profile = () => {
                         Sign Out
                     </HelperText>
                 </div>
+                <p className='text-green-600 mt-5'>{updateSuccess ? 'User is updated successfully' : ''}</p>
             </form>
         </div>
     );
