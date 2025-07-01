@@ -1,7 +1,7 @@
 // Import express để tạo router
 import express from "express";
 // Import các hàm xử lý (controller) từ file auth.controller.js
-import {google, signin, signup} from "../controllers/auth.controller.js";
+import {google, signin, signOut, signup} from "../controllers/auth.controller.js";
 
 // Tạo một router mới từ express
 const router = express.Router();
@@ -14,5 +14,7 @@ router.post("/signin", signin)
 
 // Định nghĩa route POST /google để xử lý đăng nhập hoặc đăng ký bằng Google OAuth
 router.post("/google", google)
+
+router.post('/signout', signOut)
 
 export default router;

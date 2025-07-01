@@ -5,7 +5,7 @@ import {type ChangeEvent, type FormEvent, useEffect, useRef, useState} from "rea
 import {supabase} from "../supabase";
 import {
     deleteUserFailure,
-    deleteUserStart, deleteUserSuccess,
+    deleteUserStart, deleteUserSuccess, signOutUserFailure, signOutUserStart, signOutUserSuccess,
     updateUserFailure,
     updateUserStart,
     updateUserSuccess
@@ -209,6 +209,28 @@ const Profile = () => {
         }
     }
 
+    const handleLogOut = async() => {
+        try {
+            dispatch(signOutUserStart())
+            const res = await fetch(`/api/auth/signout`,{
+                method: 'POST',
+                credentials: 'include', // Đảm bảo cookie được gửi theo
+            });
+            const data = await res.json();
+            if (data.success === false) {
+                dispatch(signOutUserFailure(data.message));
+                return;
+            }
+            dispatch(signOutUserSuccess(data));
+        } catch (e) {
+            if (e instanceof Error) {
+                dispatch(signOutUserFailure(e.message));
+            } else {
+                dispatch(signOutUserFailure("Unknown error"));
+            }
+        }
+    }
+
     if (!currentUser) return <div className="text-center mt-10">Loading...</div>;
 
     return (
@@ -287,7 +309,10 @@ const Profile = () => {
                     >
                         Delete Account
                     </HelperText>
-                    <HelperText className="text-red-600 font-medium">
+                    <HelperText
+                        className="text-red-600 font-medium cursor-pointer"
+                        onClick={handleLogOut}
+                    >
                         Sign Out
                     </HelperText>
                 </div>

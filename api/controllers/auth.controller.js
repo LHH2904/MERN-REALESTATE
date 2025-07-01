@@ -136,3 +136,16 @@ export const google = async (req, res, next) => {
         next(e);  // Gửi lỗi cho middleware xử lý lỗi chung
     }
 }
+
+export const signOut = async (req, res, next) => {
+    try {
+        res.clearCookie("access_token",{
+            httpOnly: true,
+            sameSite: "strict",
+            path: "/"
+        });
+        res.status(200).json('User has been logged out!')
+    } catch (e) {
+        next(e);
+    }
+}
