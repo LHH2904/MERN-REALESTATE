@@ -3,6 +3,9 @@ import mongoose from "mongoose";
 
 // Định nghĩa schema cho bảng `users` trong MongoDB
 const listingSchema = new mongoose.Schema({
+        _id: {
+            type: String,
+        },
         name: {
             type: String,
             required: true,
